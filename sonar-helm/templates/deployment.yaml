@@ -1,0 +1,169 @@
+# # apiVersion: apps/v1
+# # kind: Deployment
+# # metadata:
+# #   name: sonarqube
+# #   labels:
+# #     app: sonarqube
+# # spec:
+# #   replicas: {{ .Values.controller.replicaCount }}
+# #   selector:
+# #     matchLabels:
+# #       app: sonarqube
+# #   template:
+# #     metadata:
+# #       labels:
+# #         app: sonarqube
+# #     spec:
+# #       containers:
+# #       - name: sonarqube
+# #         image: "{{ .Values.controller.image.repository }}:{{ .Values.controller.image.tag }}"
+# #         ports:
+# #         - containerPort: 9000
+# #         resources:
+# #           requests:
+# #             cpu: {{ .Values.controller.resources.requests.cpu }}
+# #             memory: {{ .Values.controller.resources.requests.memory }}
+# #           limits:
+# #             cpu: {{ .Values.controller.resources.limits.cpu }}
+# #             memory: {{ .Values.controller.resources.limits.memory }}
+# #         envFrom:
+# #           - configMapRef:
+# #               name: sonarqube-config
+# #           - secretRef:
+# #               name: sonarqube-secrets
+# #         volumeMounts:
+# #         - name: sonarqube-data
+# #           mountPath: /opt/sonarqube/data
+# #       volumes:
+# #         - name: sonarqube-data
+# #           persistentVolumeClaim:
+# #             claimName: sonarqube-pvc
+
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: sonarqube
+#   labels:
+#     app: sonarqube
+# spec:
+#   replicas: {{ .Values.controller.replicaCount }}
+#   selector:
+#     matchLabels:
+#       app: sonarqube
+#   template:
+#     metadata:
+#       labels:
+#         app: sonarqube
+#     spec:
+#       securityContext:  # Add this to ensure consistent user/group ID
+#         fsGroup: 1000    # Match the UID in your Dockerfile
+
+#       initContainers:
+#         - name: init-permissions
+#           image: busybox
+#           command:
+#             - sh
+#             - -c
+#             - |
+#               mkdir -p /opt/sonarqube/data /opt/sonarqube/temp /opt/sonarqube/logs && \
+#               chown -R 1000:1000 /opt/sonarqube/data /opt/sonarqube/temp /opt/sonarqube/logs
+#           securityContext:
+#             runAsUser: 0
+#           volumeMounts:
+#             - name: sonarqube-data
+#               mountPath: /opt/sonarqube
+
+#       containers:
+#         - name: sonarqube
+#           image: "{{ .Values.controller.image.repository }}:{{ .Values.controller.image.tag }}"
+#           ports:
+#             - containerPort: 9000
+#           resources:
+#             requests:
+#               cpu: {{ .Values.controller.resources.requests.cpu }}
+#               memory: {{ .Values.controller.resources.requests.memory }}
+#             limits:
+#               cpu: {{ .Values.controller.resources.limits.cpu }}
+#               memory: {{ .Values.controller.resources.limits.memory }}
+#           envFrom:
+#             - configMapRef:
+#                 name: sonarqube-config
+#             - secretRef:
+#                 name: sonarqube-secrets
+#           volumeMounts:
+#             - name: sonarqube-data
+#               mountPath: /opt/sonarqube
+
+#       volumes:
+#         - name: sonarqube-data
+#           persistentVolumeClaim:
+#             claimName: sonarqube-pvc
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sonarqube
+  labels:
+    app: sonarqube
+spec:
+  replicas: {{ .Values.controller.replicaCount }}
+  selector:
+    matchLabels:
+      app: sonarqube
+  template:
+    metadata:
+      labels:
+        app: sonarqube
+    spec:
+      securityContext:
+        fsGroup: 1000  # Match the UID in your Dockerfile
+
+      initContainers:
+        - name: init-permissions
+          image: busybox
+          command:
+            - sh
+            - -c
+            - |
+              mkdir -p /opt/sonarqube/data /opt/sonarqube/temp /opt/sonarqube/logs && \
+              chown -R 1000:1000 /opt/sonarqube/data /opt/sonarqube/temp /opt/sonarqube/logs
+          securityContext:
+            runAsUser: 0
+          volumeMounts:
+            - name: sonarqube-data
+              mountPath: /opt/sonarqube  # Ensuring the PVC is only for data, logs, and temp
+
+      containers:
+        - name: sonarqube
+          image: "{{ .Values.controller.image.repository }}:{{ .Values.controller.image.tag }}"
+          ports:
+            - containerPort: 9000
+          resources:
+            requests:
+              cpu: {{ .Values.controller.resources.requests.cpu }}
+              memory: {{ .Values.controller.resources.requests.memory }}
+            limits:
+              cpu: {{ .Values.controller.resources.limits.cpu }}
+              memory: {{ .Values.controller.resources.limits.memory }}
+          envFrom:
+            - configMapRef:
+                name: sonarqube-config
+            - secretRef:
+                name: sonarqube-secrets
+          volumeMounts:
+            - name: sonarqube-data
+              mountPath: /opt/sonarqube/data
+            - name: sonarqube-logs
+              mountPath: /opt/sonarqube/logs
+            - name: sonarqube-temp
+              mountPath: /opt/sonarqube/temp
+
+      volumes:
+        - name: sonarqube-data
+          persistentVolumeClaim:
+            claimName: sonarqube-pvc
+        - name: sonarqube-logs
+          emptyDir: {}  # Optional: Use emptyDir for logs if ephemeral storage is okay
+        - name: sonarqube-temp
+          emptyDir: {}  # Optional: Use emptyDir for temp data
