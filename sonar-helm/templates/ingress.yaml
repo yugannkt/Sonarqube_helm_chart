@@ -27,8 +27,8 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: jenkins-ingress
-  namespace: jenkins
+  name: sonarqube-ingress
+  namespace: sonarqube
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
