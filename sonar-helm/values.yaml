@@ -15,7 +15,7 @@ controller:
     annotations: {}
     path: /
     hosts:
-      - sonarqube.local
+      - sonarqube.pocdevops.shop
     tls: []  # Example: tls: [{ hosts: [ "sonarqube.local" ], secretName: "sonarqube-tls" }]
   resources:
     requests:
